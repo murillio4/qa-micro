@@ -1,4 +1,5 @@
-ROOT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+all: build run
 
 run:
 	docker-compose run auth-service
@@ -6,11 +7,11 @@ run:
 build: build-proto build-docker
 
 build-proto:
-	protoc -I. \
-		--proto_path=$(ROOT_DIR) \
+	protoc \
+		--proto_path=$(GOPATH)/src:. \
 		--go_out=. \
 		--micro_out=. \
-		proto/auth/auth.proto
+		proto/auth.proto
 
 build-docker:
 	docker-compose build auth-service
