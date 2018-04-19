@@ -1,15 +1,21 @@
 package jwt
 
-type UserInfo struct {
-	ID        string
-	Email     string
-	FirstName string
-	LastName  string
-	Name      string
-	Picture   string
+import (
+	"time"
 
-	Roles       map[string]string
-	Permissions map[string]string
+	jwtGo "github.com/dgrijalva/jwt-go"
+)
+
+type UserInfo struct {
+	ID        string `json:",omitempty"`
+	Email     string `json:",omitempty"`
+	FirstName string `json:",omitempty"`
+	LastName  string `json:",omitempty"`
+	Name      string `json:",omitempty"`
+	Picture   string `json:",omitempty"`
+
+	Roles       map[string]string `json:",omitempty"`
+	Permissions map[string]string `json:",omitempty"`
 }
 
 func (u *UserInfo) GetID() string {
@@ -66,4 +72,14 @@ func (u *UserInfo) GetPermissions() map[string]string {
 		return u.Permissions
 	}
 	return nil
+}
+
+type BaseClaims struct {
+	jwtGo.StandardClaims
+	UserInfo UserInfo `json:",omitempty"`
+}
+
+// GetExpireAt get expire date of refresh claims
+func (bc *BaseClaims) GetExpireAt() time.Time {
+	return time.Unix(bc.ExpiresAt, 0)
 }

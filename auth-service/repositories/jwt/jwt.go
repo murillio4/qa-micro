@@ -7,96 +7,97 @@ import (
 )
 
 const (
-	refreshTokenExpireTime = time.Hour * time.Duration(24)
-	authTokenExpireTime    = time.Minute * time.Duration(4)
+	// RefreshExpireTime time to
+	refreshExpireTime = time.Hour * time.Duration(24)
+	// AuthExpireTime
+	authExpireTime = time.Minute * time.Duration(4)
 )
 
-//AuthClaims claims for auth jwt token
-type AuthClaims struct {
-	jwtGo.StandardClaims
-	UserInfo
+// Repository interface for token repo
+type Repository interface {
+	GetAuthClaims(UserInfo) *BaseClaims
+	GetRefreshClaims(id string) *BaseClaims
+	GenerateAuthToken(*BaseClaims) (string, error)
+	GenerateRefreshToken(*BaseClaims) (string, error)
+	ValidateAuthToken(string) (*BaseClaims, bool)
+	ValidateRefreshToken(string) (*BaseClaims, bool)
 }
 
-//RefreshClaims claims for refresh jwt token
-type RefreshClaims struct {
-	jwtGo.StandardClaims
-	UUID string
+// TokenRepository state holder for tokenrepo
+type TokenRepository struct {
+	authKey, refreshKey []byte
 }
 
-var authKey, refreshKey []byte
-
-func init() {
-	authKey = []byte("q4t7w!z%C*F-JaNdRgUkXn2r5u8x/A?D")
-	refreshKey = []byte("E(H+MbQeThWmZq4t7w!z%C*F-J@NcRfU")
+// NewTokenRepository create a new token repo
+func NewTokenRepository() *TokenRepository {
+	return &TokenRepository{
+		[]byte("q4t7w!z%C*F-JaNdRgUkXn2r5u8x/A?D"),
+		[]byte("E(H+MbQeThWmZq4t7w!z%C*F-J@NcRfU"),
+	}
 }
 
-//NewRefreshClaims generate new refresh claims
-func NewRefreshClaims(id string) *RefreshClaims {
-	expire := time.Now().Local().Add(refreshTokenExpireTime).Unix()
+//GetAuthClaims generate new auth claims
+func (*TokenRepository) GetAuthClaims(user UserInfo) *BaseClaims {
+	expire := time.Now().Local().Add(authExpireTime).Unix()
 
-	return &RefreshClaims{
+	return &BaseClaims{
 		StandardClaims: jwtGo.StandardClaims{
 			ExpiresAt: expire,
 			Issuer:    "www.progsys.no",
 		},
-		UUID: id,
+		UserInfo: user,
 	}
 }
 
-//NewAuthClaims generate new refresh claims
-func NewAuthClaims(userInfo *UserInfo) *AuthClaims {
-	expire := time.Now().Local().Add(authTokenExpireTime).Unix()
+//GetRefreshClaims generate new refresh claims
+func (*TokenRepository) GetRefreshClaims(id string) *BaseClaims {
+	expire := time.Now().Local().Add(refreshExpireTime).Unix()
 
-	return &AuthClaims{
+	return &BaseClaims{
 		StandardClaims: jwtGo.StandardClaims{
 			ExpiresAt: expire,
 			Issuer:    "www.progsys.no",
+			Id:        id,
 		},
-		UserInfo: *userInfo,
 	}
 }
 
-//GetExpireAt get expire date of refresh claims
-func (jc *RefreshClaims) GetExpireAt() time.Time {
-	return time.Unix(jc.ExpiresAt, 0)
-}
-
-//GenerateTokenString generate a token string from refresh claims
-func (jc *RefreshClaims) GenerateTokenString() (string, error) {
-	token := jwtGo.NewWithClaims(jwtGo.SigningMethodHS256, jc)
-	tokenString, err := token.SignedString(refreshKey)
+//GenerateAuthToken generate a token string from auth claims
+func (repo *TokenRepository) GenerateAuthToken(claims *BaseClaims) (string, error) {
+	token := jwtGo.NewWithClaims(jwtGo.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(repo.authKey)
 
 	return tokenString, err
 }
 
-//GenerateTokenString generate a token string from auth claims
-func (jc *AuthClaims) GenerateTokenString() (string, error) {
-	token := jwtGo.NewWithClaims(jwtGo.SigningMethodHS256, jc)
-	tokenString, err := token.SignedString(authKey)
+//GenerateRefreshToken generate a token string from refresh claims
+func (repo *TokenRepository) GenerateRefreshToken(claims *BaseClaims) (string, error) {
+	token := jwtGo.NewWithClaims(jwtGo.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(repo.refreshKey)
 
 	return tokenString, err
 }
 
-//ValidateRefreshToken validates refresh token and returns claims if ok
-func ValidateRefreshToken(tokenString string) (*RefreshClaims, bool) {
-	token, err := jwtGo.ParseWithClaims(tokenString, &RefreshClaims{}, func(token *jwtGo.Token) (interface{}, error) {
-		return refreshKey, nil
+//ValidateAuthToken validates auth token and returns claims if ok
+func (repo *TokenRepository) ValidateAuthToken(tokenString string) (*BaseClaims, bool) {
+	token, err := jwtGo.ParseWithClaims(tokenString, &BaseClaims{}, func(token *jwtGo.Token) (interface{}, error) {
+		return repo.authKey, nil
 	})
 
-	if claims, ok := token.Claims.(*RefreshClaims); token.Valid && ok && err != nil {
+	if claims, ok := token.Claims.(*BaseClaims); token.Valid && ok && err != nil {
 		return claims, true
 	}
 
 	return nil, false
 }
 
-//ValidateAuthToken validates auth token and returns claims if ok
-func ValidateAuthToken(tokenString string) (*AuthClaims, bool) {
-	token, err := jwtGo.ParseWithClaims(tokenString, &AuthClaims{}, func(token *jwtGo.Token) (interface{}, error) {
-		return authKey, nil
+//ValidateRefreshToken validates refresh token and returns claims if ok
+func (repo *TokenRepository) ValidateRefreshToken(tokenString string) (*BaseClaims, bool) {
+	token, err := jwtGo.ParseWithClaims(tokenString, &BaseClaims{}, func(token *jwtGo.Token) (interface{}, error) {
+		return repo.refreshKey, nil
 	})
 
-	if claims, ok := token.Claims.(*AuthClaims); token.Valid && ok && err != nil {
+	if claims, ok := token.Claims.(*BaseClaims); token.Valid && ok && err != nil {
 		return claims, true
 	}
 
