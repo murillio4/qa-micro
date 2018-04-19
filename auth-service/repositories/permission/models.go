@@ -14,9 +14,9 @@ type Permission struct {
 func (p *Permission) Reset() { *p = Permission{} }
 
 // GetUUID UUID get function
-func (p *Permission) GetUUID() string {
+func (p *Permission) GetID() string {
 	if p != nil {
-		return p.ID.String()
+		return string(p.ID)
 	}
 	return ""
 }

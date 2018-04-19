@@ -3,8 +3,6 @@ package permission
 import (
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -14,7 +12,6 @@ const (
 
 // Repository permission repository interface
 type Repository interface {
-	NewPermissionsRepository(*mgo.Session) *PermissionsRepository
 	Create(*Permission) error
 	GetByUUID(string) (*Permission, error)
 	GetByName(string) (*Permission, error)
@@ -39,9 +36,7 @@ func NewPermissionsRepository(mgoSession *mgo.Session) *PermissionsRepository {
 		Sparse:     true,
 	}
 
-	if err := repo.collection().EnsureIndex(index); err != nil {
-		log.WithError(err).Panic("Mongo index unique")
-	}
+	repo.collection().EnsureIndex(index)
 
 	return repo
 }
@@ -52,15 +47,13 @@ func (repo *PermissionsRepository) Create(permission *Permission) error {
 	return c.Insert(permission)
 }
 
-// GetByUUID Get permission by uuid
-func (repo *PermissionsRepository) GetByUUID(uuid string) (*Permission, error) {
+// GetByID Get permission by uuid
+func (repo *PermissionsRepository) GetByID(id string) (*Permission, error) {
 	var permission *Permission
 
 	c := repo.collection()
 	err := c.Find(bson.M{
-		"uuid": bson.M{
-			"$eq": uuid,
-		},
+		"_id": bson.ObjectId(id),
 	}).One(&permission)
 
 	if err != nil {
@@ -76,9 +69,7 @@ func (repo *PermissionsRepository) GetByName(name string) (*Permission, error) {
 
 	c := repo.collection()
 	err := c.Find(bson.M{
-		"name": bson.M{
-			"$eq": name,
-		},
+		"name": string(name),
 	}).One(&permission)
 
 	if err != nil {
