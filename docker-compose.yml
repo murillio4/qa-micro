@@ -1,0 +1,19 @@
+version: '3.3'
+
+services:
+  auth-service:
+    build: ./auth-service
+    environment:
+      MICRO_REGISTRY: "mdns"
+      MICRO_SERVER_ADRESS: ":50051"
+      MONGO_HOST: "datastore"
+      MONGO_PORT: "27017"
+    ports:
+      - 50051:50051
+    depends_on:
+      - datastore
+
+  datastore:
+    image: mongo
+    ports:
+      - 27017:27017

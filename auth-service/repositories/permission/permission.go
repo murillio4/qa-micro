@@ -42,19 +42,17 @@ func NewPermissionsRepository(mgoSession *mgo.Session) *PermissionsRepository {
 }
 
 // Create create new permission
-func (repo *PermissionsRepository) Create(permission *Permission) error {
+func (repo *PermissionsRepository) create(permission *Permission) error {
 	c := repo.collection()
 	return c.Insert(permission)
 }
 
 // GetByID Get permission by uuid
-func (repo *PermissionsRepository) GetByID(id string) (*Permission, error) {
+func (repo *PermissionsRepository) GetByID(id bson.ObjectId) (*Permission, error) {
 	var permission *Permission
 
 	c := repo.collection()
-	err := c.Find(bson.M{
-		"_id": bson.ObjectId(id),
-	}).One(&permission)
+	err := c.FindId(id).One(&permission)
 
 	if err != nil {
 		return nil, err
@@ -80,7 +78,7 @@ func (repo *PermissionsRepository) GetByName(name string) (*Permission, error) {
 }
 
 // GetByRole Get all permissions with role
-func (repo *PermissionsRepository) GetByRole(role string) ([]*Permission, error) {
+func (repo *PermissionsRepository) GetByRole(role bson.ObjectId) ([]*Permission, error) {
 	var permissions []*Permission
 
 	c := repo.collection()

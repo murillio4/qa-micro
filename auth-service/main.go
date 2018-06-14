@@ -24,8 +24,8 @@ func main() {
 		}).Panic("Could not connect to datastore with host")
 	}
 
-	repo, err := permission.NewPermissionsRepository(session)
-	permissions, err := repo.GetRolePermissions([]string{"sdsd"})
+	repo := permission.NewPermissionsRepository(session)
+	permissions, err := repo.GetByRoles([]string{"sdsd"})
 	if err != nil {
 		log.WithError(err).Error("Faen")
 	}
